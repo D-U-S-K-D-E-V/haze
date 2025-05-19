@@ -1,0 +1,21 @@
+There are three types of neurons in the human nervous system.
+1. Sensory neurons
+2. Interneurons
+3. Motorneurons
+
+Sensory neurons are akin to input perceptrons. They simply take information and pass data from the outside world into the network.
+Interneurons process the data and send it along to another interneuron or Motorneurons
+Motorneurons perform some function like moving limbs. These could be considered the "output" layer if you will.
+
+How do we model this in a programmatic fashion?
+
+There will be a discrete input layer "sensors" that take in features of data. These will communicate with interneurons. The interneurons will have motor neurons dispersed throughout the network to produce output for the network.
+
+During backpropogation, we can determine if a neuron participated in a decision, and increase or decrease attraction based on how favorable that outcome was in training.
+
+To decide which neuron to try next, a random number can be chosen based on the number of connections the nueron has. It will be more likely the choose a nueron it has a better connection with, but could choose less stable connections through random chance.
+
+THere will be a new sensor neuron for each input. This could potentially offer a way for neural networks to dynamically handle changes in feature size.
+
+Each sensor will fire, sending the data to a new neuron. That neuron will multiply the value by a weight. If the value si strong enough to cause that neuron to fire, the travel will continue. Eventually, it will arrive at a motor neuron, and the motor neurons will tally up the connection strength it recieved.
+
