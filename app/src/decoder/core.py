@@ -15,6 +15,8 @@ import numpy as np
 import math
 from typing import Union
 from ..terminal.errors import IdenticalConnectionError
+from typing import Optional
+from ..utils.calculations import normalize
 
 # decoder doesn't need to know about stuff
 class Decoder(Entity):
@@ -24,13 +26,13 @@ class Decoder(Entity):
             type: DecoderType
         ):
         Entity.__init__(self)
-        self._outputs: list[Any] = None
+        self._outputs: Optional[list[Any]] = None
         self._data_types = data_types
         self._type = type
-        self.core: CoreIO = Injector.resolve(GlobalTypes.CORE)
-        self._auditor: Auditor = Injector.resolve(GlobalTypes.AUDITOR)
-        self._network: Network = Injector.resolve(GlobalTypes.NETWORK)
-        self._io: NeuronIO = Injector.resolve(GlobalTypes.NEURON_IO)
+        self.core: Optional[CoreIO] = Injector.resolve(GlobalTypes.CORE)
+        self._auditor: Optional[Auditor] = Injector.resolve(GlobalTypes.AUDITOR)
+        self._network: Optional[Network] = Injector.resolve(GlobalTypes.NETWORK)
+        self._io: Optional[NeuronIO] = Injector.resolve(GlobalTypes.NEURON_IO)
         self._confidence: float = 0.1
 
     def get_last_confidence(self):
@@ -114,8 +116,21 @@ class Decoder(Entity):
         for m in motors:
             m.reset_state()
     
-    def confidence(self):
-        raise NotImplementedError("Method must be implemented by a subclass")
+    def confidence(self, epsilon=1e-9):
+        motor_states = [motor.get_state() for motor in self.get_motors()]
+        signals = np.array(motor_states, dtype=np.float64)
+        total = np.sum(signals)
+
+        if total == 0:
+            return 0.0
+
+        probs = signals / total
+
+        entropy = -np.sum(probs * np.log(probs + epsilon))
+        max_entropy = np.log(len(signals))
+        confidence = 1.0 - (entropy / max_entropy if max_entropy > 0 else 1.0)
+
+        return confidence
     
     def check_terminus(self):
         terminus = self._network.mesh.terminus
@@ -149,13 +164,13 @@ class Regressor(Decoder):
         
         return numerator / denominator
     
-    def confidence(self):
-        motors = self.get_active_motors()
-        confidence = 0
-        for m in motors:
-            confidence += m.get_state()
+    # def confidence(self):
+    #     motors = self.get_active_motors()
+    #     confidence = 0
+    #     for m in motors:
+    #         confidence += m.get_state()
 
-        return confidence/len(motors) 
+    #     return confidence/len(motors) 
     
 
 
@@ -170,12 +185,11 @@ class ArgMax(Decoder):
 
     def _predict_impl(self):
         max_motor = self._find_max_motor()
-        
         return max_motor.answer
     
-    def confidence(self):
-        max_motor: Motor = self._find_max_motor()
-        return max_motor.get_state()
+    # def confidence(self):
+    #     max_motor: Motor = self._find_max_motor()
+    #     return max_motor.get_state()
 
 
 
@@ -192,13 +206,13 @@ class SoftMax(Decoder):
         activations = [motor.get_state() for motor in self.get_active_motors()]
         return self.softmax(activations)
     
-    def confidence(self):
-        motors = self.get_active_motors()
-        confidence = 0
-        for m in motors:
-            confidence += m.get_state()
+    # def confidence(self):
+    #     motors = self.get_active_motors()
+    #     confidence = 0
+    #     for m in motors:
+    #         confidence += m.get_state()
 
-        return confidence/len(motors) 
+    #     return confidence/len(motors) 
     
 
 
@@ -215,8 +229,8 @@ class Binary(Decoder):
         return self._outputs[index]
     
     # work on this later
-    def confidence(self):
-        return 0
+    # def confidence(self):
+    #     return 0
 
 
 
@@ -247,8 +261,8 @@ class Vector(Decoder):
         return result_vector
     
     # work on this sometime later
-    def confidence(self):
-        return 0
+    # def confidence(self):
+    #     return 0
 
 
 
@@ -265,14 +279,14 @@ class TopK(Decoder):
         self._k = k
         return [motor.answer for motor in sorted_motors][:k]
     
-    def confidence(self):
-        motors = self._sort_motors()[:self._k]
-        confidence = 0
+    # def confidence(self):
+    #     motors = self._sort_motors()[:self._k]
+    #     confidence = 0
         
-        for m in motors:
-            confidence += m.get_state()
+    #     for m in motors:
+    #         confidence += m.get_state()
 
-        return confidence/len(motors) 
+    #     return confidence/len(motors) 
 
 
 
@@ -285,12 +299,12 @@ class Bitmask(Decoder):
         self.threshold = threshold
         return [motor.answer for motor in self.get_active_motors() if motor.get_state() > threshold]
     
-    def confidence(self):
-        motors = self.get_active_motors()
-        confidence = 0
-        for m in motors:
-            state_value = m.get_state()
-            if state_value > self.threshold:
-                confidence += m.get_state()
+    # def confidence(self):
+    #     motors = self.get_active_motors()
+    #     confidence = 0
+    #     for m in motors:
+    #         state_value = m.get_state()
+    #         if state_value > self.threshold:
+    #             confidence += m.get_state()
 
-        return confidence/len(motors) 
+    #     return confidence/len(motors) 
