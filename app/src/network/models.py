@@ -5,6 +5,6 @@ from ..mesh.core import Mesh
 
 @dataclass
 class MeshModel:
-    aperature: Mesh
+    # aperature: Mesh
     nexus: Mesh
     terminus: Mesh

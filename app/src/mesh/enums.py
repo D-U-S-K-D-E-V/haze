@@ -1,6 +1,6 @@
 from enum import StrEnum
 
 class MeshType(StrEnum):
-    APERTURE = "aperture"
+    # APERTURE = "aperture"
     NEXUS = "nexus"
     TERMINUS = "terminus"

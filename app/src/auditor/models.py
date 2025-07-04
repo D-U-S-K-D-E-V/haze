@@ -11,6 +11,6 @@ class ActivityModel:
 
 @dataclass
 class AuditResultsModel:
-    aperture_growth: int
+    # aperture_growth: int
     nexus_growth: int
     terminus_growth: int
